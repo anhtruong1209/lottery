@@ -12,7 +12,7 @@ cmds = [
   "npm run build --prefix Frontend",
   "mkdir -p Backend/wwwroot",
   "cp -r Frontend/dist/* Backend/wwwroot/",
-  "dotnet publish Backend/Backend.csproj --no-restore -c Release -o out --self-contained true -r linux-x64"
+  "dotnet publish Backend/Backend.csproj -c Release -o out --self-contained true -r linux-x64"
 ]
 
 [start]
