@@ -1,0 +1,43 @@
+{
+  "services": [
+    {
+      "type": "web",
+      "name": "vishipel-lottery-backend",
+      "env": "docker",
+      "plan": "free",
+      "region": "singapore",
+      "buildCommand": "cd Backend && dotnet restore && dotnet publish -c Release -o out",
+      "startCommand": "cd Backend/out && dotnet Backend.dll --urls http://0.0.0.0:$PORT",
+      "envVars": [
+        {
+          "key": "ASPNETCORE_ENVIRONMENT",
+          "value": "Production"
+        },
+        {
+          "key": "ConnectionStrings__DefaultConnection",
+          "sync": false
+        },
+        {
+          "key": "Supabase__Url",
+          "sync": false
+        },
+        {
+          "key": "Supabase__AnonKey",
+          "sync": false
+        },
+        {
+          "key": "JwtSettings__Secret",
+          "sync": false
+        },
+        {
+          "key": "JwtSettings__Issuer",
+          "value": "VishipelApi"
+        },
+        {
+          "key": "JwtSettings__Audience",
+          "value": "VishipelClient"
+        }
+      ]
+    }
+  ]
+}
