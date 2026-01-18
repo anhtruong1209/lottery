@@ -12,8 +12,8 @@ cmds = [
   "npm run build --prefix Frontend",
   "mkdir -p Backend/wwwroot",
   "cp -r Frontend/dist/* Backend/wwwroot/",
-  "dotnet publish Backend/Backend.csproj --no-restore -c Release -o Backend/out"
+  "dotnet publish Backend/Backend.csproj --no-restore -c Release -o out"
 ]
 
 [start]
-cmd = "dotnet Backend/out/Backend.dll --urls http://0.0.0.0:$PORT"
+cmd = "cd out && dotnet Backend.dll --urls http://0.0.0.0:$PORT"
