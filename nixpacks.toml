@@ -3,17 +3,17 @@ nixPkgs = ["dotnet-sdk", "nodejs_20"]
 
 [phases.install]
 cmds = [
-  "cd Backend && dotnet restore",
-  "cd Frontend && npm install"
+  "dotnet restore Backend/Backend.csproj",
+  "npm install --prefix Frontend"
 ]
 
 [phases.build]
 cmds = [
-  "cd Frontend && npm run build",
-  "rm -rf Backend/wwwroot/*",
+  "npm run build --prefix Frontend",
+  "mkdir -p Backend/wwwroot",
   "cp -r Frontend/dist/* Backend/wwwroot/",
-  "cd Backend && dotnet publish --no-restore -c Release -o out"
+  "dotnet publish Backend/Backend.csproj --no-restore -c Release -o Backend/out"
 ]
 
 [start]
-cmd = "cd Backend/out && dotnet Backend.dll --urls http://0.0.0.0:$PORT"
+cmd = "dotnet Backend/out/Backend.dll --urls http://0.0.0.0:$PORT"
