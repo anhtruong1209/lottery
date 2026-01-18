@@ -16,4 +16,4 @@ cmds = [
 ]
 
 [start]
-cmd = "cd out && dotnet Backend.dll --urls http://0.0.0.0:$PORT"
+cmd = "./out/Backend --urls http://0.0.0.0:$PORT"
