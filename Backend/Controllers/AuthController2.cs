@@ -25,34 +25,40 @@ namespace Backend.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<object>> Login(LoginDto request)
         {
-            // Login against Users2
-            var user = await _context.Users2.FirstOrDefaultAsync(u => u.Username == request.Username);
-            
-            // Special case: Seed default admin if table is empty just like Program.cs? 
-            // Better to let programmed seeding handle it, or just allow "admin/admin123" if missing?
-            // For now, assume Users2 is populated or we auto-populate logic here?
-            if (user == null && request.Username == "admin" && !_context.Users2.Any())
+            try 
             {
-                 // Auto-seed admin for V2
-                 var hash = BCrypt.Net.BCrypt.HashPassword("admin123");
-                 user = new User2 { Username = "admin", Role = "Admin", PasswordHash = hash };
-                 _context.Users2.Add(user);
-                 await _context.SaveChangesAsync();
-            }
+                // Login against Users2
+                var user = await _context.Users2.FirstOrDefaultAsync(u => u.Username == request.Username);
+                
+                // Special case: Seed default admin if table is empty
+                if (user == null && request.Username == "admin" && !_context.Users2.Any())
+                {
+                     // Auto-seed admin for V2
+                     var hash = BCrypt.Net.BCrypt.HashPassword("admin123");
+                     user = new User2 { Username = "admin", Role = "Admin", PasswordHash = hash };
+                     _context.Users2.Add(user);
+                     await _context.SaveChangesAsync();
+                }
 
-            if (user == null)
+                if (user == null)
+                {
+                    return BadRequest($"User not found. (Checked Users2 table)");
+                }
+
+                if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
+                {
+                    return BadRequest("Wrong password.");
+                }
+
+                string token = CreateToken(user);
+
+                return Ok(new { token });
+            }
+            catch (Exception ex)
             {
-                return BadRequest("User not found.");
+                // Return detailed error for debugging
+                return StatusCode(500, new { error = "Server Error", message = ex.Message, stack = ex.StackTrace });
             }
-
-            if (!BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash))
-            {
-                return BadRequest("Wrong password.");
-            }
-
-            string token = CreateToken(user);
-
-            return Ok(new { token });
         }
 
         private string CreateToken(User2 user)
@@ -63,10 +69,13 @@ namespace Backend.Controllers
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
-            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
-                _configuration.GetSection("AppSettings:Token").Value!));
+            var keyStr = _configuration.GetSection("AppSettings:Token").Value 
+                         ?? _configuration.GetSection("JwtSettings:Secret").Value 
+                         ?? "ThisIsASecretKeyForVishipelLotteryApp2026!KeepItSecretKeepItSafe_AndMakeItLongerToSatisfyHS512JustInCase";
 
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
+
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
 
             var token = new JwtSecurityToken(
                     claims: claims,

@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Backend.Dtos;
 
 namespace Backend.Controllers
 {
@@ -68,10 +69,22 @@ namespace Backend.Controllers
                 return BadRequest("Tên và phòng ban không được để trống");
             }
 
+            var trimmedName = dto.Name.Trim();
+            var trimmedDept = dto.Department.Trim();
+
+            // Check for duplicates
+            var existing = await _context.Participants
+                .FirstOrDefaultAsync(p => p.Name == trimmedName && p.Department == trimmedDept);
+
+            if (existing != null)
+            {
+                return BadRequest($"Người tham gia '{trimmedName}' thuộc '{trimmedDept}' đã tồn tại.");
+            }
+
             var participant = new Participant
             {
-                Name = dto.Name.Trim(),
-                Department = dto.Department.Trim(),
+                Name = trimmedName,
+                Department = trimmedDept,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -104,8 +117,20 @@ namespace Backend.Controllers
                 return BadRequest("Tên và phòng ban không được để trống");
             }
 
-            participant.Name = dto.Name.Trim();
-            participant.Department = dto.Department.Trim();
+            var trimmedName = dto.Name.Trim();
+            var trimmedDept = dto.Department.Trim();
+
+            // Check for duplicates (excluding self)
+            var duplicate = await _context.Participants
+                .AnyAsync(p => p.Id != id && p.Name == trimmedName && p.Department == trimmedDept);
+
+            if (duplicate)
+            {
+                return BadRequest($"Người tham gia '{trimmedName}' thuộc '{trimmedDept}' đã tồn tại.");
+            }
+
+            participant.Name = trimmedName;
+            participant.Department = trimmedDept;
             participant.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
@@ -148,10 +173,6 @@ namespace Backend.Controllers
         }
     }
 
-    public class ParticipantDto
-    {
-        public string Name { get; set; } = string.Empty;
-        public string Department { get; set; } = string.Empty;
-    }
+
 }
 

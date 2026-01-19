@@ -43,7 +43,7 @@ const ParticipantLookup: React.FC = () => {
             // Or just stay success. User said "quét là ra luôn" implying simplicity.
         } catch (error: any) {
             console.error('Error creating participant:', error);
-            alert('Có lỗi xảy ra, vui lòng thử lại!');
+            alert(`Lỗi: ${error.message || 'Có lỗi xảy ra, vui lòng thử lại!'}`);
         } finally {
             setLoading(false);
         }
@@ -106,7 +106,9 @@ const ParticipantLookup: React.FC = () => {
                                     value={department}
                                     onChange={(e) => setDepartment(e.target.value)}
                                     required
+                                    className="w-full px-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all font-medium text-lg appearance-none cursor-pointer"
                                 >
+                                    <option value="" className="text-black">-- Chọn Phòng ban --</option>
                                     {departments.map(dept => (
                                         <option key={dept.id} value={dept.name} className="text-black">{dept.name}</option>
                                     ))}

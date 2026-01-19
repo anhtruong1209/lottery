@@ -73,24 +73,28 @@ namespace Backend.Controllers
 
         private string CreateToken(User user)
         {
-            var claims = new List<Claim>
+            List<Claim> claims = new List<Claim>
             {
                 new Claim(ClaimTypes.Name, user.Username),
                 new Claim(ClaimTypes.Role, user.Role)
             };
 
-            var keyStr = _configuration.GetSection("AppSettings:Token").Value ?? "ThisIsASecretKeyForVishipelLotteryApp2026!KeepItSecretKeepItSafe";
+            var keyStr = _configuration.GetSection("AppSettings:Token").Value 
+                         ?? _configuration.GetSection("JwtSettings:Secret").Value 
+                         ?? "ThisIsASecretKeyForVishipelLotteryApp2026!KeepItSecretKeepItSafe_AndMakeItLongerToSatisfyHS512JustInCase";
+
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(keyStr));
 
-            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha512Signature);
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256Signature);
 
             var token = new JwtSecurityToken(
-                claims: claims,
-                expires: DateTime.UtcNow.AddDays(1),
-                signingCredentials: creds
-            );
+                    claims: claims,
+                    expires: DateTime.Now.AddDays(1),
+                    signingCredentials: creds
+                );
 
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
+
             return jwt;
         }
 

@@ -43,10 +43,8 @@ namespace Backend.Controllers
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> PutDrawConfig(int id, DrawConfig2 drawConfig)
         {
-            if (id != drawConfig.Id)
-            {
-                return BadRequest();
-            }
+            // Force ID to match URL
+            drawConfig.Id = id;
 
             _context.Entry(drawConfig).State = EntityState.Modified;
 

@@ -16,6 +16,7 @@ const getApiBaseUrl = () => {
 };
 
 const API_BASE_URL = getApiBaseUrl();
+console.log("Current API Base URL:", API_BASE_URL, "Version Env:", (import.meta as any).env?.VITE_API_VERSION);
 
 // Helper to get token
 const getAuthToken = () => localStorage.getItem('vishipel_token');

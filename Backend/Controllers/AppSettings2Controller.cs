@@ -209,7 +209,7 @@ namespace Backend.Controllers
             catch (Exception ex)
             {
                 Console.WriteLine($"Error uploading file {key}: {ex.Message}");
-                return StatusCode(500, new FileUploadResponse { Success = false, Message = "Server error during upload." });
+                return StatusCode(500, new FileUploadResponse { Success = false, Message = $"Server error: {ex.Message}" });
             }
         }
         

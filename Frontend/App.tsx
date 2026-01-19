@@ -45,6 +45,8 @@ const App: React.FC = () => {
         { id: '3', label: '10 Giải', count: 10 },
     ]);
 
+    const [cacheBuster, setCacheBuster] = useState(Date.now());
+
     // Login Handler
     const handleLogin = (success: boolean) => {
         if (success) {
@@ -73,17 +75,28 @@ const App: React.FC = () => {
             setParticipants(participantsData);
             setWinners(winnersData);
             setDrawConfigs(configsData);
-            // Set first config as default if not set
-            if (!selectedConfigId && configsData.length > 0) {
-                setSelectedConfigId(configsData[0].id);
-            }
+
+            setSelectedConfigId(prev => {
+                if (!prev && configsData.length > 0) return configsData[0].id;
+                return prev;
+            });
+
             console.log('✓ Đã tải dữ liệu từ API thành công');
         } catch (error) {
             console.warn('⚠️  Không thể kết nối đến Backend API. Đang sử dụng dữ liệu mẫu.');
-            // Fallback to mock data if API is not available (only if empty)
-            if (participants.length === 0) setParticipants(generateMockData());
+            // Fallback: Check length inside setter to avoid dependency
+            setParticipants(prev => {
+                if (prev.length === 0) return generateMockData();
+                return prev;
+            });
         }
-    }, [selectedConfigId, participants.length]);
+    }, []); // Removed dependencies to stabilize function identity
+
+    // Ref to track spinning state for interval
+    const isSpinningRef = React.useRef(drawState !== 'idle');
+    useEffect(() => {
+        isSpinningRef.current = drawState !== 'idle';
+    }, [drawState]);
 
     useEffect(() => {
         if (isLoggedIn) {
@@ -100,7 +113,10 @@ const App: React.FC = () => {
             }, 1000);
 
             const refreshInterval = setInterval(() => {
-                fetchData();
+                // Only fetch if idle to avoid resetting globe during spin
+                if (!isSpinningRef.current) {
+                    fetchData();
+                }
             }, 10000);
 
             return () => {
@@ -324,7 +340,7 @@ const App: React.FC = () => {
                 {settings.backgroundUrl && (
                     <div
                         className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
-                        style={{ backgroundImage: `url(${settings.backgroundUrl})` }}
+                        style={{ backgroundImage: `url(${settings.backgroundUrl}?t=${cacheBuster})` }}
                     />
                 )}
                 {/* Fallback Overlay to darken/tint if needed */}
@@ -419,6 +435,7 @@ const App: React.FC = () => {
 
                             {/* Main Draw Button */}
                             <button
+                                type="button"
                                 onClick={() => {
                                     const config = drawConfigs.find(c => c.id === selectedConfigId);
                                     if (config) {

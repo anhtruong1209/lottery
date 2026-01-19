@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Backend.Data;
 using Backend.Models;
+using Backend.Dtos;
 
 namespace Backend.Controllers
 {
@@ -105,10 +106,6 @@ namespace Backend.Controllers
         }
     }
 
-    public class CreateWinnersDto
-    {
-        public List<int> ParticipantIds { get; set; } = new();
-        public int DrawConfigId { get; set; }
-    }
+
 }
 
