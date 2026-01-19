@@ -244,13 +244,6 @@ const Globe3D: React.FC<Globe3DProps> = ({ participants, isSpinning, speed }) =>
       {/* Background Overlay - Adjusted to be lighter/brighter as requested */}
       <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-yellow-500/10 to-blue-500/10 pointer-events-none mix-blend-screen z-0"></div>
 
-      {/* Center VISHIPEL Text (Floating in 3D space purely visual) */}
-      <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-10 pointer-events-none text-center">
-        <h1 className="text-4xl md:text-6xl font-black text-transparent bg-clip-text bg-gradient-to-b from-yellow-200 via-yellow-400 to-yellow-600 drop-shadow-[0_0_15px_rgba(255,215,0,0.8)] tracking-widest" style={{ fontFamily: "'Inter', sans-serif" }}>
-          VISHIPEL
-        </h1>
-      </div>
-
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
 
       {/* Golden Aura Background - shifted */}

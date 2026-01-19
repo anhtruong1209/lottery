@@ -107,14 +107,14 @@ class ApiService {
   async createDrawConfig(label: string, count: number): Promise<DrawConfig> {
     return this.request<DrawConfig>('/drawconfigs', {
       method: 'POST',
-      body: JSON.stringify({ label, count }),
+      body: JSON.stringify({ label, count, prizeName: '' }),
     });
   }
 
-  async updateDrawConfig(id: string, label: string, count: number): Promise<void> {
+  async updateDrawConfig(id: string, label: string, count: number, prizeName?: string): Promise<void> {
     await this.request(`/drawconfigs/${id}`, {
       method: 'PUT',
-      body: JSON.stringify({ label, count }),
+      body: JSON.stringify({ label, count, prizeName }),
     });
   }
 

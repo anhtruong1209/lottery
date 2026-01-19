@@ -66,7 +66,7 @@ namespace Backend.Controllers
             {
                 ParticipantId = participant.Id,
                 DeviceFingerprint = dto.DeviceFingerprint,
-                CheckedInAt = DateTime.Now,
+                CheckedInAt = DateTime.UtcNow,
                 IPAddress = HttpContext.Connection.RemoteIpAddress?.ToString(),
                 UserAgent = Request.Headers["User-Agent"].ToString()
             };

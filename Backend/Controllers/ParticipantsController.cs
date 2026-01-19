@@ -72,7 +72,7 @@ namespace Backend.Controllers
             {
                 Name = dto.Name.Trim(),
                 Department = dto.Department.Trim(),
-                CreatedAt = DateTime.Now
+                CreatedAt = DateTime.UtcNow
             };
 
             _context.Participants.Add(participant);
@@ -106,7 +106,7 @@ namespace Backend.Controllers
 
             participant.Name = dto.Name.Trim();
             participant.Department = dto.Department.Trim();
-            participant.UpdatedAt = DateTime.Now;
+            participant.UpdatedAt = DateTime.UtcNow;
 
             await _context.SaveChangesAsync();
 

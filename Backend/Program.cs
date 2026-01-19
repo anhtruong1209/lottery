@@ -113,17 +113,29 @@ using (var scope = app.Services.CreateScope())
     try
     {
         // NOTE: Migrations are handled manually via Supabase SQL script
-        // dbContext.Database.Migrate();
+        dbContext.Database.Migrate();
 
-        // Seed Admin User
+        // ALWAYS generate and print hash for manual database update
+        var correctPasswordHash = BCrypt.Net.BCrypt.HashPassword("admin");
+        Console.WriteLine($"");
+        Console.WriteLine($"==== ADMIN PASSWORD HASH FOR 'admin' ====");
+        Console.WriteLine(correctPasswordHash);
+        Console.WriteLine($"==========================================");
+        Console.WriteLine($"Run this SQL in Supabase:");
+        Console.WriteLine($"UPDATE users SET password_hash = '{correctPasswordHash}' WHERE username = 'admin';");
+        Console.WriteLine($"==========================================");
+        Console.WriteLine($"");
+
+        // Seed Admin User (only if doesn't exist)
         if (!dbContext.Users.Any(u => u.Username == "admin"))
         {
             var adminUser = new Backend.Models.User
             {
                 Username = "admin",
                 Role = "Admin",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("adminquaythuongvsp")
+                PasswordHash = correctPasswordHash
             };
+
             dbContext.Users.Add(adminUser);
             dbContext.SaveChanges();
             

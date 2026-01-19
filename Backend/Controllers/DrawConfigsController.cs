@@ -54,6 +54,10 @@ namespace Backend.Controllers
 
             config.Label = dto.Label;
             config.Count = dto.Count;
+            if (dto.PrizeName != null) 
+            {
+                config.PrizeName = dto.PrizeName;
+            }
 
             await _context.SaveChangesAsync();
 

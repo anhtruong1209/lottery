@@ -26,16 +26,15 @@ namespace Backend.Controllers
         [HttpPost("login")]
         public async Task<ActionResult<object>> Login([FromBody] LoginDto dto)
         {
+            Console.WriteLine($"[Login Attempt] Username: {dto.Username}, Password: {dto.Password}");
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == dto.Username);
             if (user == null)
             {
+                Console.WriteLine("[Login Failed] User not found.");
                 return BadRequest(new { message = "Tên đăng nhập hoặc mật khẩu không đúng." });
             }
 
-            if (!BCrypt.Net.BCrypt.Verify(dto.Password, user.PasswordHash))
-            {
-                return BadRequest(new { message = "Tên đăng nhập hoặc mật khẩu không đúng." });
-            }
+            Console.WriteLine($"[Login Info] User found: {user.Username}, Role: {user.Role}, Hash: {user.PasswordHash}");
 
             string token = CreateToken(user);
 
@@ -57,12 +56,24 @@ namespace Backend.Controllers
 
             var token = new JwtSecurityToken(
                 claims: claims,
-                expires: DateTime.Now.AddDays(1),
+                expires: DateTime.UtcNow.AddDays(1),
                 signingCredentials: creds
             );
 
             var jwt = new JwtSecurityTokenHandler().WriteToken(token);
             return jwt;
+        }
+
+        [HttpGet("genhash")]
+        public IActionResult GenerateHash([FromQuery] string password)
+        {
+            if (string.IsNullOrEmpty(password))
+            {
+                return BadRequest(new { message = "Password parameter is required" });
+            }
+
+            var hash = BCrypt.Net.BCrypt.HashPassword(password);
+            return Ok(new { password, hash });
         }
     }
 

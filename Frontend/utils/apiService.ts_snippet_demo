@@ -1,0 +1,35 @@
+import { DrawConfig, Participant, Winner } from '../types';
+
+export const apiService = {
+  baseUrl: 'http://localhost:3001/api', // Adjust base URL as needed
+
+  // ... (Other methods) ...
+
+  async getDrawConfigs(): Promise<DrawConfig[]> {
+     const response = await fetch(`${this.baseUrl}/drawconfigs`);
+     if (!response.ok) throw new Error('Failed to fetch draw configs');
+     return response.json();
+  },
+
+  async createDrawConfig(label: string, count: number): Promise<DrawConfig> {
+     const response = await fetch(`${this.baseUrl}/drawconfigs`, {
+         method: 'POST',
+         headers: { 'Content-Type': 'application/json' },
+         body: JSON.stringify({ label, count, prizeName: '' })
+     });
+     if (!response.ok) throw new Error('Failed to create draw config');
+     return response.json();
+  },
+
+  async updateDrawConfig(id: string, label: string, count: number, prizeName?: string): Promise<void> {
+    const response = await fetch(`${this.baseUrl}/drawconfigs/${id}`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ label, count, prizeName }),
+    });
+    if (!response.ok) throw new Error('Failed to update draw config');
+  },
+
+  // ... (Other methods)
+  // Re-exporting the rest to ensure file completion in next step
+};

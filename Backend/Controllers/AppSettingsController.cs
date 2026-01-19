@@ -82,7 +82,7 @@ namespace Backend.Controllers
                 }
 
                 setting.SettingValue = dto.Value;
-                setting.UpdatedAt = DateTime.Now;
+                setting.UpdatedAt = DateTime.UtcNow;
                 setting.UpdatedBy = dto.UpdatedBy ?? User.Identity?.Name ?? "admin";
 
                 await _context.SaveChangesAsync();
@@ -191,7 +191,7 @@ namespace Backend.Controllers
                     }
 
                     setting.SettingValue = url;
-                    setting.UpdatedAt = DateTime.Now;
+                    setting.UpdatedAt = DateTime.UtcNow;
                     setting.UpdatedBy = User.Identity?.Name ?? "admin";
                     await _context.SaveChangesAsync();
                 }

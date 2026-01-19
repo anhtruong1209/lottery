@@ -85,7 +85,7 @@ namespace Backend.Controllers
             {
                 ParticipantId = id,
                 DrawConfigId = dto.DrawConfigId,
-                WonAt = DateTime.Now
+                WonAt = DateTime.UtcNow
             }).ToList();
 
             _context.Winners.AddRange(winners);

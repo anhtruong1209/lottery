@@ -16,6 +16,7 @@ export interface DrawConfig {
   label: string;
   count: number;
   prizeName?: string;
+  displayOrder?: number;
 }
 
 export type DrawState = 'idle' | 'spinning' | 'stopping' | 'show-winner';

@@ -7,9 +7,8 @@ import RegistrationModal from './components/RegistrationModal';
 import WinnerDisplay from './components/WinnerDisplay';
 import WinnersList from './components/WinnersList';
 import AdminPanel from './components/AdminPanel';
-import { Settings, UserPlus, Gift, Volume2, VolumeX, List, RefreshCw, Palette } from 'lucide-react';
+import { Settings, UserPlus, Gift, Volume2, VolumeX, List, RefreshCw } from 'lucide-react';
 import LoginScreen from './components/LoginScreen';
-import { SettingsModal } from './components/SettingsModal';
 import { useAppSettings } from './utils/useAppSettings';
 
 const App: React.FC = () => {
@@ -28,7 +27,7 @@ const App: React.FC = () => {
     const [showWinnersList, setShowWinnersList] = useState(false);
     const [showRegModal, setShowRegModal] = useState(false);
     const [showAdminPanel, setShowAdminPanel] = useState(false);
-    const [showSettingsModal, setShowSettingsModal] = useState(false);
+
 
     // Load app settings
     const { settings, loading: settingsLoading, reloadSettings } = useAppSettings();
@@ -286,13 +285,7 @@ const App: React.FC = () => {
                         <RefreshCw size={20} className={countdown <= 2 ? "animate-spin" : ""} />
                     </button>
 
-                    <button
-                        onClick={() => setShowSettingsModal(true)}
-                        className="glass-panel p-3 rounded-full hover:bg-white/20 transition-colors text-white shadow-lg"
-                        title="Cấu hình giao diện"
-                    >
-                        <Palette size={20} />
-                    </button>
+
 
                     <button
                         onClick={() => setShowAdminPanel(true)}
@@ -471,15 +464,11 @@ const App: React.FC = () => {
                         }
                     }
                 }}
-            />
-
-            <SettingsModal
-                isOpen={showSettingsModal}
-                onClose={() => setShowSettingsModal(false)}
-                onSettingsUpdated={reloadSettings}
+                reloadSettings={reloadSettings}
             />
         </div>
     );
 };
+
 
 export default App;
