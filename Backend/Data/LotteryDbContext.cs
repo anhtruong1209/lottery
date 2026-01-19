@@ -15,6 +15,16 @@ namespace Backend.Data
         public DbSet<CheckIn> CheckIns { get; set; }
         public DbSet<User> Users { get; set; }
         public DbSet<AppSetting> AppSettings { get; set; }
+        public DbSet<Department> Departments { get; set; }
+
+        // V2 Tables
+        public DbSet<AppSetting2> AppSettings2 { get; set; }
+        public DbSet<Participant2> Participants2 { get; set; }
+        public DbSet<DrawConfig2> DrawConfigs2 { get; set; }
+        public DbSet<Winner2> Winners2 { get; set; }
+        public DbSet<CheckIn2> CheckIns2 { get; set; }
+        public DbSet<User2> Users2 { get; set; }
+        public DbSet<Department2> Departments2 { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -104,13 +114,31 @@ namespace Backend.Data
                 entity.ToTable("app_settings");
                 entity.Property(a => a.Id).HasColumnName("id");
                 entity.Property(a => a.SettingKey).HasColumnName("setting_key");
-                entity.Property(a => a.SettingValue).HasColumnName("setting_value");
+                entity.Property(a => a.SettingValue).HasColumnName("setting_value").HasColumnType("nvarchar(max)");
                 entity.Property(a => a.SettingType).HasColumnName("setting_type");
                 entity.Property(a => a.Description).HasColumnName("description");
                 entity.Property(a => a.UpdatedAt).HasColumnName("updated_at");
                 entity.Property(a => a.UpdatedBy).HasColumnName("updated_by");
 
                 entity.HasIndex(a => a.SettingKey).IsUnique();
+            });
+
+            // Configure AppSetting2 for V2
+            modelBuilder.Entity<AppSetting2>(entity =>
+            {
+                entity.ToTable("app_settings_2");
+                entity.Property(e => e.SettingValue).HasColumnType("nvarchar(max)");
+            });
+
+            // Configure Department
+            modelBuilder.Entity<Department>(entity =>
+            {
+                entity.ToTable("departments");
+                entity.Property(d => d.Id).HasColumnName("id");
+                entity.Property(d => d.Name).HasColumnName("name");
+                entity.Property(d => d.CreatedAt).HasColumnName("created_at");
+                
+                entity.HasIndex(d => d.Name).IsUnique();
             });
 
             // Note: Seed data is now in the SQL migration script

@@ -9,6 +9,18 @@ using global::Microsoft.OpenApi.Models;
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
+// Increase Max Request Body Size for Base64 Images
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartBodyLengthLimit = int.MaxValue;
+    options.MemoryBufferThreshold = int.MaxValue;
+});
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = int.MaxValue; // 2GB
+});
+
 builder.Services.AddControllers();
 
 // Add SignalR
@@ -19,36 +31,23 @@ builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowAll", policy =>
     {
-        // Allow all origins in production, or specific domains
-        if (builder.Environment.IsDevelopment())
-        {
-            policy.WithOrigins("http://localhost:5173", "http://localhost:3000", "http://localhost:3001")
-                  .AllowAnyMethod()
-                  .AllowAnyHeader()
-                  .AllowCredentials();
-        }
-        else
-        {
-            // Production: Allow same origin (when deployed together)
-            policy.AllowAnyOrigin()
-                  .AllowAnyMethod()
-                  .AllowAnyHeader();
-        }
+        policy.AllowAnyOrigin()
+              .AllowAnyMethod()
+              .AllowAnyHeader();
     });
 });
 
-// Configure PostgreSQL (Supabase)
-var connectionString = builder.Configuration.GetConnectionString("DefaultConnection") 
-    ?? "Host=localhost;Port=5432;Database=lottery_db;Username=postgres;Password=postgres";
+// Configure SQL Server
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
 builder.Services.AddDbContext<LotteryDbContext>(options =>
-    options.UseNpgsql(connectionString, npgsqlOptions =>
+    options.UseSqlServer(connectionString, sqlOptions =>
     {
-        npgsqlOptions.EnableRetryOnFailure(
+        sqlOptions.EnableRetryOnFailure(
             maxRetryCount: 3,
             maxRetryDelay: TimeSpan.FromSeconds(30),
-            errorCodesToAdd: null);
-        npgsqlOptions.CommandTimeout(30);
+            errorNumbersToAdd: null);
+        sqlOptions.CommandTimeout(30);
     }));
 
 // Add Authentication

@@ -2,14 +2,17 @@ import { Participant, Winner, DrawConfig } from '../types';
 
 // Auto-detect API URL based on current location
 const getApiBaseUrl = () => {
+  // Determine version suffix
+  const version = (import.meta as any).env?.VITE_API_VERSION === '2' ? '/v2' : '';
+
   // If VITE_API_URL is set in .env, use it
   const envApiUrl = (import.meta as any).env?.VITE_API_URL;
   if (envApiUrl) {
-    return envApiUrl.replace(/\/api\/?$/, '') + '/api';
+    return envApiUrl.replace(/\/api\/?$/, '') + '/api' + version;
   }
 
-  // Otherwise, use same origin (when deployed together)
-  return '/api';
+  // Otherwise, use same origin
+  return '/api' + version;
 };
 
 const API_BASE_URL = getApiBaseUrl();
@@ -42,6 +45,31 @@ class ApiService {
     }
 
     return response.json();
+  }
+
+  // Generic methods
+  public async get<T>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint);
+  }
+
+  public async post<T>(endpoint: string, body: any): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  public async put<T>(endpoint: string, body: any): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    });
+  }
+
+  public async delete<T>(endpoint: string): Promise<T> {
+    return this.request<T>(endpoint, {
+      method: 'DELETE',
+    });
   }
 
   // Participants

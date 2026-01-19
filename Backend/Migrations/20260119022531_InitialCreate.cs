@@ -1,6 +1,5 @@
 ﻿using System;
 using Microsoft.EntityFrameworkCore.Migrations;
-using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
 
@@ -16,14 +15,14 @@ namespace Backend.Migrations
                 name: "app_settings",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    setting_key = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    setting_value = table.Column<string>(type: "text", nullable: true),
-                    setting_type = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    description = table.Column<string>(type: "text", nullable: true),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_by = table.Column<string>(type: "text", nullable: true)
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    setting_key = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    setting_value = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    setting_type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    description = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    updated_by = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -34,12 +33,12 @@ namespace Backend.Migrations
                 name: "draw_configs",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    label = table.Column<string>(type: "text", nullable: false),
-                    count = table.Column<int>(type: "integer", nullable: false),
-                    prize_name = table.Column<string>(type: "text", nullable: false),
-                    display_order = table.Column<int>(type: "integer", nullable: false)
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    label = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    count = table.Column<int>(type: "int", nullable: false),
+                    prize_name = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    display_order = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -50,12 +49,12 @@ namespace Backend.Migrations
                 name: "participants",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    name = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: false),
-                    department = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    updated_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    name = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    department = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    updated_at = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -66,12 +65,12 @@ namespace Backend.Migrations
                 name: "users",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    username = table.Column<string>(type: "text", nullable: false),
-                    password_hash = table.Column<string>(type: "text", nullable: false),
-                    role = table.Column<string>(type: "text", nullable: false),
-                    created_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    username = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    password_hash = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    role = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    created_at = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -82,13 +81,13 @@ namespace Backend.Migrations
                 name: "check_ins",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    participant_id = table.Column<int>(type: "integer", nullable: false),
-                    device_fingerprint = table.Column<string>(type: "text", nullable: false),
-                    checked_in_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    ip_address = table.Column<string>(type: "text", nullable: true),
-                    user_agent = table.Column<string>(type: "text", nullable: true)
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    participant_id = table.Column<int>(type: "int", nullable: false),
+                    device_fingerprint = table.Column<string>(type: "nvarchar(450)", nullable: false),
+                    checked_in_at = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    ip_address = table.Column<string>(type: "nvarchar(max)", nullable: true),
+                    user_agent = table.Column<string>(type: "nvarchar(max)", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -105,11 +104,11 @@ namespace Backend.Migrations
                 name: "winners",
                 columns: table => new
                 {
-                    id = table.Column<int>(type: "integer", nullable: false)
-                        .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    participant_id = table.Column<int>(type: "integer", nullable: false),
-                    draw_config_id = table.Column<int>(type: "integer", nullable: false),
-                    won_at = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    participant_id = table.Column<int>(type: "int", nullable: false),
+                    draw_config_id = table.Column<int>(type: "int", nullable: false),
+                    won_at = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {

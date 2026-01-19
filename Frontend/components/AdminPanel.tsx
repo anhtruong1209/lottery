@@ -1,9 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Participant, DrawConfig, Winner } from '../types';
+import { Participant, DrawConfig, Winner, Department } from '../types';
 import { apiService } from '../utils/apiService';
 import { settingsService } from '../services/settingsService';
-import { X, Trash2, Edit2, Plus, Save, RotateCcw, DatabaseBackup, Upload, Image as ImageIcon, Palette, Gift, Users, RefreshCw } from 'lucide-react';
-import { DEPARTMENTS } from '../utils/departments';
+import { departmentsService } from '../services/departmentsService';
+import { X, Trash2, Edit2, Plus, Save, RotateCcw, DatabaseBackup, Upload, Image as ImageIcon, Palette, Gift, Users, RefreshCw, Building, Music } from 'lucide-react';
+// import { DEPARTMENTS } from '../utils/departments'; // Removed static
+
+import { AppSettings } from '../utils/useAppSettings';
 
 interface AdminPanelProps {
   isOpen: boolean;
@@ -17,60 +20,68 @@ interface AdminPanelProps {
   onRestoreDefaults: () => void;
   onDeleteAllParticipants: () => void;
   reloadSettings: () => Promise<void>;
+  settings: AppSettings;
 }
 
 const AdminPanel: React.FC<AdminPanelProps> = ({
-  isOpen, onClose, participants, setParticipants, drawConfigs, setDrawConfigs, winners, onResetWinners, onRestoreDefaults, onDeleteAllParticipants, reloadSettings
+  isOpen, onClose, participants, setParticipants, drawConfigs, setDrawConfigs, winners, onResetWinners, onRestoreDefaults, onDeleteAllParticipants, reloadSettings, settings
 }) => {
-  const [activeTab, setActiveTab] = useState<'participants' | 'config' | 'ui'>('participants');
+  const [activeTab, setActiveTab] = useState<'participants' | 'departments' | 'config' | 'ui'>('participants');
   const [searchTerm, setSearchTerm] = useState('');
   const [filterDept, setFilterDept] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
   const [editDept, setEditDept] = useState('');
 
+  // Departments State
+  const [departments, setDepartments] = useState<Department[]>([]);
+  const [newDeptName, setNewDeptName] = useState('');
+
   // Add participant state
   const [showAddForm, setShowAddForm] = useState(false);
   const [newName, setNewName] = useState('');
-  const [newDept, setNewDept] = useState(DEPARTMENTS[0]);
+  const [newDept, setNewDept] = useState('');
+
+  useEffect(() => {
+    if (isOpen) {
+      loadDepartments();
+    }
+  }, [isOpen]);
+
+  const loadDepartments = async () => {
+    try {
+      const data = await departmentsService.getDepartments();
+      setDepartments(data);
+      if (data.length > 0 && !newDept) setNewDept(data[0].name);
+    } catch (e) {
+      console.error("Failed to load departments", e);
+    }
+  }
 
   // UI Settings State
   const [uiLoading, setUiLoading] = useState(false);
   const [uiUploading, setUiUploading] = useState<string | null>(null);
   const [uiMessage, setUiMessage] = useState<{ type: 'success' | 'error', text: string } | null>(null);
 
-  const [companyName, setCompanyName] = useState('');
-  const [eventTitle, setEventTitle] = useState('');
-  const [eventYear, setEventYear] = useState('');
-  const [primaryColor, setPrimaryColor] = useState('#1e40af');
-  const [secondaryColor, setSecondaryColor] = useState('#3b82f6');
-  const [logoPreview, setLogoPreview] = useState('');
-  const [backgroundPreview, setBackgroundPreview] = useState('');
+  const [companyName, setCompanyName] = useState(settings.companyName);
+  const [eventTitle, setEventTitle] = useState(settings.eventTitle);
+  const [eventYear, setEventYear] = useState(settings.eventYear);
+  const [logoPreview, setLogoPreview] = useState(settings.logoUrl);
+  const [backgroundPreview, setBackgroundPreview] = useState(settings.backgroundUrl);
+  const [musicPreview, setMusicPreview] = useState(settings.musicUrl);
 
+  // Update local state when settings prop changes
   useEffect(() => {
-    if (isOpen && activeTab === 'ui') {
-      loadSettings();
-    }
-  }, [isOpen, activeTab]);
+    setCompanyName(settings.companyName);
+    setEventTitle(settings.eventTitle);
+    setEventYear(settings.eventYear);
+    setLogoPreview(settings.logoUrl);
+    setBackgroundPreview(settings.backgroundUrl);
+    setMusicPreview(settings.musicUrl);
+  }, [settings]);
 
-  const loadSettings = async () => {
-    try {
-      setUiLoading(true);
-      const settingsDict = await settingsService.getSettingsDictionary();
-      setCompanyName(settingsDict.company_name || 'VISHIPEL');
-      setEventTitle(settingsDict.event_title || 'CHƯƠNG TRÌNH QUAY THƯỞNG');
-      setEventYear(settingsDict.event_year || '2026');
-      setPrimaryColor(settingsDict.primary_color || '#1e40af');
-      setSecondaryColor(settingsDict.secondary_color || '#3b82f6');
-      setLogoPreview(settingsDict.logo_url || '/images/default-logo.png');
-      setBackgroundPreview(settingsDict.background_url || '/images/default-bg.jpg');
-    } catch (error) {
-      console.error('Error loading settings:', error);
-      showUiMessage('error', 'Không thể tải cấu hình');
-    } finally {
-      setUiLoading(false);
-    }
-  };
+  // Removed internal loadSettings which caused the delay
+  // ...
 
   const showUiMessage = (type: 'success' | 'error', text: string) => {
     setUiMessage({ type, text });
@@ -126,7 +137,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
       const newParticipant = await apiService.createParticipant(newName.trim(), newDept.trim());
       setParticipants(prev => [newParticipant, ...prev]);
       setNewName('');
-      setNewDept(DEPARTMENTS[0]);
+      setNewDept(departments[0]?.name || '');
       setShowAddForm(false);
     } catch (error: any) {
       alert(error.message || 'Có lỗi xảy ra khi thêm người tham gia');
@@ -221,25 +232,73 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
     }
   };
 
+  const handleMusicUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) { showUiMessage('error', 'File quá lớn! Tối đa 10MB'); return; }
+    if (!file.type.startsWith('audio/')) { showUiMessage('error', 'Chỉ chấp nhận file âm thanh (MP3, WAV)!'); return; }
+
+    try {
+      setUiUploading('music');
+      const response = await settingsService.uploadMusic(file);
+      if (response.success && response.url) {
+        setMusicPreview(response.url);
+        showUiMessage('success', 'Upload nhạc thành công!');
+        await reloadSettings();
+      } else {
+        showUiMessage('error', response.message || 'Upload thất bại');
+      }
+    } catch (error) {
+      showUiMessage('error', 'Lỗi khi upload nhạc');
+    } finally {
+      setUiUploading(null);
+    }
+  };
+
   const handleSaveUiSettings = async () => {
     try {
-      setUiLoading(true);
+      // setUiLoading(true); // Don't block UI for auto-save, just background
       await Promise.all([
         settingsService.updateSetting('company_name', companyName),
         settingsService.updateSetting('event_title', eventTitle),
         settingsService.updateSetting('event_year', eventYear),
-        settingsService.updateSetting('primary_color', primaryColor),
-        settingsService.updateSetting('secondary_color', secondaryColor),
       ]);
-      showUiMessage('success', 'Lưu cấu hình thành công!');
+      // showUiMessage('success', 'Đã lưu cấu hình!'); // Optional: reduce noise
       await reloadSettings();
     } catch (error) {
       console.error('Error saving settings:', error);
       showUiMessage('error', 'Lỗi khi lưu cấu hình');
     } finally {
-      setUiLoading(false);
+      // setUiLoading(false);
     }
   };
+
+  const handleBlurSave = () => {
+    handleSaveUiSettings();
+  };
+
+  const handleAddDepartment = async () => {
+    if (!newDeptName.trim()) return;
+    try {
+      const dept = await departmentsService.createDepartment(newDeptName);
+      setDepartments(prev => [...prev, dept]);
+      setNewDeptName('');
+    } catch (e) {
+      alert('Có lỗi khi thêm phòng ban');
+    }
+  };
+
+  const handleDeleteDepartment = async (id: number) => {
+    if (!window.confirm('Xóa phòng ban này?')) return;
+    try {
+      await departmentsService.deleteDepartment(id);
+      setDepartments(prev => prev.filter(d => d.id !== id));
+    } catch (e) {
+      alert('Có lỗi khi xóa phòng ban');
+    }
+  };
+
+  // ... (rest of logic)
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
@@ -258,19 +317,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
 
         {/* Tabs */}
         <div className="flex border-b border-white/10 bg-black/20">
-          <button
-            onClick={() => setActiveTab('participants')}
-            className={`flex items-center gap-2 px-8 py-4 font-semibold text-sm transition-all ${activeTab === 'participants' ? 'bg-blue-600/20 text-blue-400 border-b-2 border-blue-500' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-          >
-            <Users size={18} />
-            Danh sách ({participants.length})
+          <button onClick={() => setActiveTab('participants')} className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-all ${activeTab === 'participants' ? 'bg-blue-600/20 text-blue-400 border-b-2 border-blue-500' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+            <Users size={18} /> Danh sách ({participants.length})
           </button>
-          <button
-            onClick={() => setActiveTab('config')}
-            className={`flex items-center gap-2 px-8 py-4 font-semibold text-sm transition-all ${activeTab === 'config' ? 'bg-blue-600/20 text-blue-400 border-b-2 border-blue-500' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}
-          >
-            <Gift size={18} />
-            Cấu hình giải thưởng
+          <button onClick={() => setActiveTab('departments')} className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-all ${activeTab === 'departments' ? 'bg-blue-600/20 text-blue-400 border-b-2 border-blue-500' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+            <Building size={18} /> Phòng ban
+          </button>
+          <button onClick={() => setActiveTab('config')} className={`flex items-center gap-2 px-6 py-4 font-semibold text-sm transition-all ${activeTab === 'config' ? 'bg-blue-600/20 text-blue-400 border-b-2 border-blue-500' : 'text-gray-400 hover:text-white hover:bg-white/5'}`}>
+            <Gift size={18} /> Cấu hình giải thưởng
           </button>
           <button
             onClick={() => setActiveTab('ui')}
@@ -302,8 +356,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                   onChange={(e) => setFilterDept(e.target.value)}
                 >
                   <option value="" className="text-black">Tất cả phòng ban</option>
-                  {DEPARTMENTS.map(dept => (
-                    <option key={dept} value={dept} className="text-black">{dept}</option>
+                  {departments.map(dept => (
+                    <option key={dept.id} value={dept.name} className="text-black">{dept.name}</option>
                   ))}
                 </select>
 
@@ -345,8 +399,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       value={newDept}
                       onChange={(e) => setNewDept(e.target.value)}
                     >
-                      {DEPARTMENTS.map(dept => (
-                        <option key={dept} value={dept} className="bg-gray-900 text-white">{dept}</option>
+                      <option value="">Chọn phòng ban</option>
+                      {departments.map(dept => (
+                        <option key={dept.id} value={dept.name} className="bg-gray-900 text-white">{dept.name}</option>
                       ))}
                     </select>
                     <button onClick={handleAddParticipant} className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-bold shadow-lg">Thêm</button>
@@ -378,7 +433,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           <td className="p-4">
                             {editingId === p.id ? (
                               <select className="bg-black/50 border border-blue-500 rounded px-2 py-1 text-white w-full outline-none" value={editDept} onChange={e => setEditDept(e.target.value)}>
-                                {DEPARTMENTS.map(dept => <option key={dept} value={dept} className="bg-gray-900">{dept}</option>)}
+                                {departments.map(dept => <option key={dept.id} value={dept.name} className="bg-gray-900">{dept.name}</option>)}
                               </select>
                             ) : p.department}
                           </td>
@@ -392,6 +447,57 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                           </td>
                         </tr>
                       ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {/* DEPARTMENTS TAB */}
+          {activeTab === 'departments' && (
+            <div className="h-full flex flex-col p-6 animate-in slide-in-from-bottom-2 duration-300">
+              <div className="mb-6 bg-white/5 p-4 rounded-xl border border-white/10 flex gap-4 items-center">
+                <input
+                  type="text"
+                  value={newDeptName}
+                  onChange={(e) => setNewDeptName(e.target.value)}
+                  placeholder="Nhập tên phòng ban mới..."
+                  className="flex-1 bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none"
+                />
+                <button onClick={handleAddDepartment} className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-lg font-bold flex items-center gap-2 transition-colors">
+                  <Plus size={20} /> Thêm
+                </button>
+                <button onClick={() => departmentsService.seedDepartments().then(loadDepartments)} className="px-4 py-3 bg-white/10 hover:bg-white/20 text-white rounded-lg font-bold flex items-center gap-2 transition-colors" title="Khôi phục danh sách mẫu">
+                  <DatabaseBackup size={20} /> Mẫu
+                </button>
+              </div>
+
+              <div className="flex-1 overflow-y-auto rounded-xl border border-white/10 bg-black/20">
+                <table className="w-full text-left text-sm text-gray-300">
+                  <thead className="bg-white/5 text-white font-bold sticky top-0 backdrop-blur-md z-10">
+                    <tr>
+                      <th className="p-4 w-[10%]">ID</th>
+                      <th className="p-4 w-[70%]">Tên Phòng Ban</th>
+                      <th className="p-4 w-[20%] text-right">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {departments.map(dept => (
+                      <tr key={dept.id} className="hover:bg-white/5 transition-colors">
+                        <td className="p-4 text-gray-500">#{dept.id}</td>
+                        <td className="p-4 font-medium text-white">{dept.name}</td>
+                        <td className="p-4 flex justify-end">
+                          <button onClick={() => handleDeleteDepartment(dept.id)} className="text-red-400 hover:text-red-300 p-2 hover:bg-white/10 rounded-lg transition-colors">
+                            <Trash2 size={18} />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                    {departments.length === 0 && (
+                      <tr>
+                        <td colSpan={3} className="p-8 text-center text-gray-500">Chưa có phòng ban nào.</td>
+                      </tr>
                     )}
                   </tbody>
                 </table>
@@ -500,33 +606,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                     <div className="space-y-4">
                       <div>
                         <label className="block text-sm text-gray-400 mb-2">Tên công ty</label>
-                        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none" placeholder="VISHIPEL" />
-                      </div>
-                      <div>
-                        <label className="block text-sm text-gray-400 mb-2">Tiêu đề sự kiện</label>
-                        <input type="text" value={eventTitle} onChange={e => setEventTitle(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none" placeholder="CHƯƠNG TRÌNH QUAY THƯỞNG" />
+                        <input type="text" value={companyName} onChange={e => setCompanyName(e.target.value)} onBlur={handleBlurSave} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none" placeholder="VISHIPEL" />
                       </div>
                     </div>
                     <div className="space-y-4">
                       <div>
-                        <label className="block text-sm text-gray-400 mb-2">Năm tổ chức</label>
-                        <input type="text" value={eventYear} onChange={e => setEventYear(e.target.value)} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none" placeholder="2026" />
+                        <label className="block text-sm text-gray-400 mb-2">Tiêu đề sự kiện</label>
+                        <input type="text" value={eventTitle} onChange={e => setEventTitle(e.target.value)} onBlur={handleBlurSave} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none" placeholder="CHƯƠNG TRÌNH QUAY THƯỞNG" />
                       </div>
-                      <div className="flex gap-4">
-                        <div className="flex-1">
-                          <label className="block text-sm text-gray-400 mb-2">Màu chính</label>
-                          <div className="flex items-center gap-2">
-                            <input type="color" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border border-white/20" />
-                            <input type="text" value={primaryColor} onChange={e => setPrimaryColor(e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm" />
-                          </div>
-                        </div>
-                        <div className="flex-1">
-                          <label className="block text-sm text-gray-400 mb-2">Màu phụ</label>
-                          <div className="flex items-center gap-2">
-                            <input type="color" value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)} className="w-10 h-10 rounded-lg cursor-pointer bg-transparent border border-white/20" />
-                            <input type="text" value={secondaryColor} onChange={e => setSecondaryColor(e.target.value)} className="flex-1 bg-black/40 border border-white/10 rounded-lg px-3 py-2 text-white text-sm" />
-                          </div>
-                        </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Năm tổ chức</label>
+                        <input type="text" value={eventYear} onChange={e => setEventYear(e.target.value)} onBlur={handleBlurSave} className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-white focus:border-blue-500 outline-none" placeholder="2026" />
                       </div>
                     </div>
                   </div>
@@ -573,19 +663,42 @@ const AdminPanel: React.FC<AdminPanelProps> = ({
                       <p className="text-xs text-gray-500">1920x1080px (Max 5MB)</p>
                     </div>
                   </div>
+
+                  {/* Music */}
+                  <div className="column-span-2 md:col-span-2 bg-white/5 border border-white/10 rounded-xl p-6">
+                    <h3 className="text-lg font-bold text-white mb-6 flex items-center gap-2 pb-4 border-b border-white/10">
+                      <Music size={20} className="text-yellow-400" />
+                      Nhạc nền
+                    </h3>
+                    <div className="flex flex-col md:flex-row items-center gap-6">
+                      <div className="flex-1 w-full">
+                        <div className="w-full h-20 border-2 border-dashed border-white/20 rounded-xl flex items-center justify-center bg-black/20 text-gray-500">
+                          {musicPreview ? (
+                            <div className="flex items-center gap-3 text-green-400 font-bold">
+                              <Music size={24} />
+                              <span>Đã có nhạc nền</span>
+                            </div>
+                          ) : (
+                            <span>Chưa có nhạc</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2 shrink-0">
+                        <label className="cursor-pointer bg-gradient-to-r from-yellow-600 to-yellow-500 hover:from-yellow-500 hover:to-yellow-400 text-white px-6 py-3 rounded-xl flex items-center gap-2 transition-colors shadow-lg shadow-yellow-900/20 font-bold">
+                          <Upload size={18} />
+                          {uiUploading === 'music' ? 'Đang tải lên...' : 'Upload Nhạc MP3'}
+                          <input type="file" accept="audio/*" className="hidden" onChange={handleMusicUpload} disabled={uiUploading === 'music'} />
+                        </label>
+                        <p className="text-xs text-center text-gray-500">MP3, WAV (Max 10MB)</p>
+                      </div>
+                    </div>
+                  </div>
                 </div>
 
-                {/* Actions */}
-                <div className="flex justify-end pt-4">
-                  <button
-                    onClick={handleSaveUiSettings}
-                    disabled={uiLoading}
-                    className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-500 text-white font-bold rounded-xl shadow-lg hover:shadow-blue-500/25 transition-all active:scale-95 disabled:opacity-50 flex items-center gap-2"
-                  >
-                    {uiLoading ? <RefreshCw className="animate-spin" size={20} /> : <Save size={20} />}
-                    Lưu Cấu Hình
-                  </button>
-                </div>
+                {/* Actions - Removed Save Button as requested */}
+                {/* <div className="flex justify-end pt-4">
+                  <button onClick={handleSaveUiSettings} ... > Lưu Cấu Hình </button>
+                </div> */}
               </div>
             </div>
           )}

@@ -42,3 +42,9 @@ export interface FileUploadResponse {
   url?: string;
   message?: string;
 }
+
+export interface Department {
+  id: number;
+  name: string;
+  createdAt: string;
+}

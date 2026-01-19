@@ -1,14 +1,33 @@
-import React, { useState } from 'react';
-import { ArrowLeft, CheckCircle, Send } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { CheckCircle, Send } from 'lucide-react';
 import { apiService } from '../utils/apiService';
-import { DEPARTMENTS } from '../utils/departments';
+import { departmentsService } from '../services/departmentsService';
+import { useAppSettings } from '../utils/useAppSettings';
+import { Department } from '../types';
 
 const ParticipantLookup: React.FC = () => {
+    // Branding
+    const { settings } = useAppSettings();
+
     // Input State
     const [name, setName] = useState('');
-    const [department, setDepartment] = useState(DEPARTMENTS[0]);
+    const [departments, setDepartments] = useState<Department[]>([]);
+    const [department, setDepartment] = useState(''); // Stores name directly for simplicity
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+
+    useEffect(() => {
+        const loadDeps = async () => {
+            try {
+                const data = await departmentsService.getDepartments();
+                setDepartments(data);
+                if (data.length > 0) setDepartment(data[0].name);
+            } catch (e) {
+                console.error("Failed to load departments", e);
+            }
+        };
+        loadDeps();
+    }, []);
 
     // Simple submission - No search, just add
     const handleSubmit = async (e: React.FormEvent) => {
@@ -33,20 +52,33 @@ const ParticipantLookup: React.FC = () => {
     const handleReset = () => {
         setSuccess(false);
         setName('');
-        setDepartment(DEPARTMENTS[0]);
+        setDepartment(departments[0]?.name || '');
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-red-900 via-red-800 to-orange-900 p-4 font-sans overflow-y-auto flex flex-col items-center justify-center">
+        <div
+            className="min-h-screen p-4 font-sans overflow-y-auto flex flex-col items-center justify-center bg-cover bg-center"
+            style={{
+                backgroundImage: settings.backgroundUrl ? `url(${settings.backgroundUrl})` : undefined,
+                backgroundColor: !settings.backgroundUrl ? '#7f1d1d' : undefined // Fallback color
+            }}
+        >
+            {/* Overlay if image is presents to ensure text contrast */}
+            <div className="absolute inset-0 bg-black/40 z-0" />
 
-            <div className="w-full max-w-md">
+            <div className="w-full max-w-md z-10 relative">
                 {/* Logo Area */}
-                <div className="text-center mb-8 animate-fade-in-down flex justify-center">
+                <div className="text-center mb-8 animate-fade-in-down flex flex-col items-center justify-center gap-4">
                     <img
-                        src="/logo.png"
+                        src={settings.logoUrl}
                         alt="Logo"
                         className="h-24 object-contain drop-shadow-xl"
                     />
+                    <h1 className="text-2xl font-bold text-white uppercase drop-shadow-md text-center leading-tight">
+                        {settings.companyName}
+                        <br />
+                        <span className="text-lg font-normal text-yellow-300">{settings.eventTitle}</span>
+                    </h1>
                 </div>
 
                 {!success ? (
@@ -73,11 +105,10 @@ const ParticipantLookup: React.FC = () => {
                                 <select
                                     value={department}
                                     onChange={(e) => setDepartment(e.target.value)}
-                                    className="w-full px-4 py-4 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/30 focus:outline-none focus:border-yellow-400 focus:ring-1 focus:ring-yellow-400 transition-all font-medium text-lg appearance-none cursor-pointer"
                                     required
                                 >
-                                    {DEPARTMENTS.map(dept => (
-                                        <option key={dept} value={dept} className="text-black">{dept}</option>
+                                    {departments.map(dept => (
+                                        <option key={dept.id} value={dept.name} className="text-black">{dept.name}</option>
                                     ))}
                                 </select>
                             </div>

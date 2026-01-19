@@ -319,6 +319,36 @@ const App: React.FC = () => {
                 </div>
             </div>
 
+            {/* Background Image */}
+            <div className="absolute inset-0 z-0">
+                {settings.backgroundUrl && (
+                    <div
+                        className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
+                        style={{ backgroundImage: `url(${settings.backgroundUrl})` }}
+                    />
+                )}
+                {/* Fallback Overlay to darken/tint if needed */}
+                <div className="absolute inset-0 bg-black/20" />
+            </div>
+
+            {/* Background Music */}
+            {settings.musicUrl && (
+                <audio
+                    ref={(audio) => {
+                        if (audio) {
+                            audio.volume = 0.5;
+                            if (soundEnabled) {
+                                audio.play().catch(e => console.log("Autoplay blocked:", e));
+                            } else {
+                                audio.pause();
+                            }
+                        }
+                    }}
+                    src={settings.musicUrl}
+                    loop
+                />
+            )}
+
             {/* Main 3D Globe Area */}
             <div className="absolute inset-0 z-0">
                 <Globe3D
@@ -465,6 +495,7 @@ const App: React.FC = () => {
                     }
                 }}
                 reloadSettings={reloadSettings}
+                settings={settings}
             />
         </div>
     );

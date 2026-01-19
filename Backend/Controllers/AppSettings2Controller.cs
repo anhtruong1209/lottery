@@ -6,28 +6,27 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Backend.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/v2/AppSettings")] // V2 Endpoint
     [ApiController]
-    public class AppSettingsController : ControllerBase
+    public class AppSettings2Controller : ControllerBase
     {
         private readonly LotteryDbContext _context;
 
-        public AppSettingsController(LotteryDbContext context)
+        public AppSettings2Controller(LotteryDbContext context)
         {
             _context = context;
         }
 
-        // GET: api/AppSettings
+        // GET: api/v2/AppSettings
         [HttpGet]
         public async Task<ActionResult<IEnumerable<object>>> GetAppSettings()
         {
-            var settings = await _context.AppSettings.ToListAsync();
+            // Use AppSettings2
+            var settings = await _context.AppSettings2.ToListAsync();
             
-            // Map settings to replace heavy Base64 content with Image URLs for specific keys
             var result = settings.Select(s => {
                 if ((s.SettingKey == "CompanyLogo" || s.SettingKey == "BackgroundImage" || s.SettingKey == "BackgroundMusic") && !string.IsNullOrEmpty(s.SettingValue))
                 {
-                    // Check if it's already a path (starts with /)
                     string finalUrl;
                     if (s.SettingValue.StartsWith("/"))
                     {
@@ -35,11 +34,9 @@ namespace Backend.Controllers
                     }
                     else
                     {
-                         // Backward compatibility for Base64 (serve via helper endpoint)
-                         finalUrl = $"{Request.Scheme}://{Request.Host}/api/AppSettings/image/{s.SettingKey}";
+                         finalUrl = $"{Request.Scheme}://{Request.Host}/api/AppSettings/image/{s.SettingKey}"; // Can reuse V1 image logic or duplicate logic if needed, but V2 aims for path based.
                     }
 
-                    // Return a projection with URL instead of Base64 data
                     return new {
                         s.Id,
                         s.SettingKey,
@@ -56,18 +53,17 @@ namespace Backend.Controllers
             return Ok(result);
         }
 
-        // GET: api/AppSettings/key/{key}
+        // GET: api/v2/AppSettings/key/{key}
         [HttpGet("key/{key}")]
         public async Task<ActionResult<object>> GetAppSettingByKey(string key)
         {
-            var appSetting = await _context.AppSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
+            var appSetting = await _context.AppSettings2.FirstOrDefaultAsync(s => s.SettingKey == key);
 
             if (appSetting == null)
             {
                 return NotFound();
             }
 
-            // Also optimize single fetch if it's an image or audio
             if ((appSetting.SettingKey == "CompanyLogo" || appSetting.SettingKey == "BackgroundImage" || appSetting.SettingKey == "BackgroundMusic") && !string.IsNullOrEmpty(appSetting.SettingValue))
             {
                 string finalUrl;
@@ -94,43 +90,12 @@ namespace Backend.Controllers
             return appSetting;
         }
 
-        // GET: api/AppSettings/image/{key}
-        [HttpGet("image/{key}")]
-        public async Task<IActionResult> GetAppSettingImage(string key)
-        {
-            var setting = await _context.AppSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
-            if (setting == null || string.IsNullOrEmpty(setting.SettingValue)) return NotFound();
-            
-            try 
-            {
-                // Format expected: "data:image/png;base64,....."
-                var value = setting.SettingValue;
-                var commaIndex = value.IndexOf(',');
-                
-                if (commaIndex < 0) return BadRequest("Invalid image format stored.");
-                
-                var header = value.Substring(0, commaIndex); // e.g. "data:image/png;base64"
-                var base64 = value.Substring(commaIndex + 1);
-                
-                var contentType = header.Replace("data:", "").Replace(";base64", ""); // e.g. "image/png"
-                if (string.IsNullOrEmpty(contentType)) contentType = "image/png";
-
-                var bytes = Convert.FromBase64String(base64);
-                return File(bytes, contentType);
-            }
-            catch(Exception ex)
-            {
-                Console.WriteLine($"Error serving image for {key}: {ex.Message}");
-                return StatusCode(500, "Error processing image.");
-            }
-        }
-
-        // POST: api/AppSettings
+        // POST: api/v2/AppSettings
         [HttpPost]
         [Authorize(Roles = "Admin")]
-        public async Task<ActionResult<AppSetting>> CreateAppSetting(AppSetting appSetting)
+        public async Task<ActionResult<AppSetting2>> CreateAppSetting(AppSetting2 appSetting)
         {
-            if (await _context.AppSettings.AnyAsync(s => s.SettingKey == appSetting.SettingKey))
+            if (await _context.AppSettings2.AnyAsync(s => s.SettingKey == appSetting.SettingKey))
             {
                 return BadRequest("Setting key already exists.");
             }
@@ -138,19 +103,18 @@ namespace Backend.Controllers
             appSetting.UpdatedAt = DateTime.UtcNow;
             appSetting.UpdatedBy = User.Identity?.Name;
 
-            _context.AppSettings.Add(appSetting);
+            _context.AppSettings2.Add(appSetting);
             await _context.SaveChangesAsync();
 
             return CreatedAtAction("GetAppSettingByKey", new { key = appSetting.SettingKey }, appSetting);
         }
 
-        // PUT: api/AppSettings/key/{key}
+        // PUT: api/v2/AppSettings/key/{key}
         [HttpPut("key/{key}")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> UpdateAppSetting(string key, UpdateSettingDto dto)
         {
-            Console.WriteLine($"[AppSettings] Updating {key} with length: {dto.Value?.Length ?? 0}");
-            var appSetting = await _context.AppSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
+            var appSetting = await _context.AppSettings2.FirstOrDefaultAsync(s => s.SettingKey == key);
 
             if (appSetting == null)
             {
@@ -167,21 +131,13 @@ namespace Backend.Controllers
             }
             catch (DbUpdateConcurrencyException)
             {
-                if (!AppSettingExists(key))
-                {
-                    return NotFound();
-                }
-                else
-                {
-                    throw;
-                }
+               throw;
             }
 
             return NoContent();
         }
 
-        // POST: api/AppSettings/upload
-        // POST: api/AppSettings/upload-file
+        // POST: api/v2/AppSettings/upload-file
         [HttpPost("upload-file")]
         [Authorize(Roles = "Admin")]
         public async Task<ActionResult<FileUploadResponse>> UploadFile([FromForm] IFormFile file, [FromForm] string key)
@@ -194,45 +150,48 @@ namespace Backend.Controllers
             
             try 
             {
-                // Ensure wwwroot/uploads exists
+                // Ensure wwwroot/uploads exists (Shared folder for both sites is fine)
                 var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads");
                 if (!Directory.Exists(uploadsFolder))
                 {
                     Directory.CreateDirectory(uploadsFolder);
                 }
 
-                // Get Extension
                 var extension = Path.GetExtension(file.FileName);
                 if (string.IsNullOrEmpty(extension)) extension = ".bin";
 
-                // Generate Filename based on Key to avoid clutter (e.g. BackgroundMusic.mp3)
-                // We overwrite the existing file for the same key
-                var fileName = $"{key}{extension}";
+                // V2 File Naming: Add suffix or keep same? 
+                // Using same name means both sites share the file physically if they upload same Key?
+                // Actually, if Key is "CompanyLogo", V1 saves "CompanyLogo.png".
+                // V2 users uploading "CompanyLogo" will overwrite it?
+                // YES if we use the same key.
+                // Should we prefix V2 files? e.g. "v2_CompanyLogo.png"?
+                // Probably safer.
+                
+                var fileName = $"v2_{key}{extension}";
                 var filePath = Path.Combine(uploadsFolder, fileName);
                 
-                // Save file to disk
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
                     await file.CopyToAsync(stream);
                 }
 
-                // Construct relative path
                 var relativePath = $"/uploads/{fileName}";
                 var mimeType = file.ContentType ?? "application/octet-stream";
 
-                // Save to DB
-                var appSetting = await _context.AppSettings.FirstOrDefaultAsync(s => s.SettingKey == key);
+                // Save to DB (AppSettings2)
+                var appSetting = await _context.AppSettings2.FirstOrDefaultAsync(s => s.SettingKey == key);
                 if (appSetting == null)
                 {
-                   appSetting = new AppSetting 
+                   appSetting = new AppSetting2 
                    { 
                        SettingKey = key,
-                       SettingValue = relativePath, // Store path instead of Base64
+                       SettingValue = relativePath, 
                        SettingType = mimeType.StartsWith("image/") ? "image" : "audio",
                        UpdatedAt = DateTime.UtcNow,
                        UpdatedBy = User.Identity?.Name 
                    };
-                   _context.AppSettings.Add(appSetting);
+                   _context.AppSettings2.Add(appSetting);
                 }
                 else
                 {
@@ -243,10 +202,9 @@ namespace Backend.Controllers
                 
                 await _context.SaveChangesAsync();
                 
-                // Return the full URL
                 var url = $"{Request.Scheme}://{Request.Host}{relativePath}";
                 
-                return Ok(new FileUploadResponse { Success = true, Url = url, Message = "File uploaded successfully." });
+                return Ok(new FileUploadResponse { Success = true, Url = url, Message = "File uploaded successfully (V2)." });
             }
             catch (Exception ex)
             {
@@ -255,35 +213,28 @@ namespace Backend.Controllers
             }
         }
         
-        // POST: api/AppSettings/init
-        // Helper to initialize default settings if they don't exist
         [HttpPost("init")]
         [Authorize(Roles = "Admin")]
         public async Task<IActionResult> InitializeSettings()
         {
-            var defaults = new List<AppSetting>
+            var defaults = new List<AppSetting2>
             {
-                new AppSetting { SettingKey = "CompanyName", SettingValue = "Vishipel Lottery", SettingType = "text", Description = "Company Name displayed in header" },
-                new AppSetting { SettingKey = "CompanyLogo", SettingValue = "", SettingType = "image", Description = "Base64 string of Company Logo" },
-                new AppSetting { SettingKey = "BackgroundImage", SettingValue = "", SettingType = "image", Description = "Base64 string of Background Image" }
+                new AppSetting2 { SettingKey = "CompanyName", SettingValue = "Vishipel Lottery V2", SettingType = "text", Description = "Company Name displayed in header" },
+                new AppSetting2 { SettingKey = "CompanyLogo", SettingValue = "", SettingType = "image", Description = "Base64 string of Company Logo" },
+                new AppSetting2 { SettingKey = "BackgroundImage", SettingValue = "", SettingType = "image", Description = "Base64 string of Background Image" }
             };
 
             foreach (var setting in defaults)
             {
-                if (!await _context.AppSettings.AnyAsync(s => s.SettingKey == setting.SettingKey))
+                if (!await _context.AppSettings2.AnyAsync(s => s.SettingKey == setting.SettingKey))
                 {
                     setting.UpdatedAt = DateTime.UtcNow;
-                    _context.AppSettings.Add(setting);
+                    _context.AppSettings2.Add(setting);
                 }
             }
 
             await _context.SaveChangesAsync();
-            return Ok(new { message = "Settings initialized." });
-        }
-
-        private bool AppSettingExists(string key)
-        {
-            return _context.AppSettings.Any(e => e.SettingKey == key);
+            return Ok(new { message = "Settings initialized (V2)." });
         }
     }
 }
