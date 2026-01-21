@@ -92,6 +92,9 @@ const App: React.FC = () => {
         }
     }, []); // Removed dependencies to stabilize function identity
 
+    // Audio for spinning
+    const spinAudioRef = React.useRef(new Audio('/1.mp3'));
+
     // Ref to track spinning state for interval
     const isSpinningRef = React.useRef(drawState !== 'idle');
     useEffect(() => {
@@ -154,6 +157,9 @@ const App: React.FC = () => {
         }
     };
 
+    // Audio for spinning
+
+
     const handleDraw = async (configId: string, count: number, prizeName?: string, prizeLabel?: string) => {
         if (drawState !== 'idle') return;
 
@@ -169,6 +175,12 @@ const App: React.FC = () => {
 
         setDrawState('spinning');
         setSpinSpeed(50); // Fast spin
+
+        // Play spin music
+        if (soundEnabled) {
+            spinAudioRef.current.currentTime = 0;
+            spinAudioRef.current.play().catch(e => console.log("Audio play failed", e));
+        }
 
         // Determine winners immediately
         let allNewWinners: Winner[] = [];
@@ -188,6 +200,10 @@ const App: React.FC = () => {
         setTimeout(async () => {
             setDrawState('stopping');
             setSpinSpeed(5); // Slow down
+
+            // Stop spin music
+            spinAudioRef.current.pause();
+            spinAudioRef.current.currentTime = 0;
 
             setTimeout(async () => {
                 const roundWinners = allNewWinners.map(w => ({
@@ -212,7 +228,7 @@ const App: React.FC = () => {
                 setSpinSpeed(20); // Reset to idle drift
 
             }, 2000);
-        }, 3000);
+        }, 5000); // 5 seconds spin
     };
 
     // Ensure when participants are deleted, they are also removed from winners if present
@@ -339,12 +355,12 @@ const App: React.FC = () => {
             <div className="absolute inset-0 z-0">
                 {settings.backgroundUrl && (
                     <div
-                        className="absolute inset-0 bg-cover bg-center transition-all duration-1000"
+                        className="absolute inset-0 bg-cover bg-center transition-all duration-1000 brightness-110 saturate-125 contrast-110"
                         style={{ backgroundImage: `url(${settings.backgroundUrl}?t=${cacheBuster})` }}
                     />
                 )}
-                {/* Fallback Overlay to darken/tint if needed */}
-                <div className="absolute inset-0 bg-black/20" />
+                {/* Fallback Overlay removed to brighten background */}
+                {/* <div className="absolute inset-0 bg-black/20" /> */}
             </div>
 
             {/* Background Music */}
@@ -417,7 +433,7 @@ const App: React.FC = () => {
                             <div className="glass-panel px-4 py-3 rounded-xl border-white/30 flex items-center gap-3">
                                 <label className="text-white text-sm font-bold">Chọn giải:</label>
                                 <select
-                                    value={selectedConfigId}
+                                    value={String(selectedConfigId)}
                                     onChange={(e) => setSelectedConfigId(e.target.value)}
                                     className="px-4 py-1 bg-white/10 border border-white/30 rounded text-white font-bold focus:outline-none focus:border-yellow-400 cursor-pointer min-w-[250px]"
                                 >
@@ -437,7 +453,7 @@ const App: React.FC = () => {
                             <button
                                 type="button"
                                 onClick={() => {
-                                    const config = drawConfigs.find(c => c.id === selectedConfigId);
+                                    const config = drawConfigs.find(c => String(c.id) === String(selectedConfigId));
                                     if (config) {
                                         const winnersForThisPrize = winners.filter(w => w.prizeLabel === config.label).length;
                                         const remaining = config.count - winnersForThisPrize;

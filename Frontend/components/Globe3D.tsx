@@ -241,14 +241,14 @@ const Globe3D: React.FC<Globe3DProps> = ({ participants, isSpinning, speed }) =>
       onTouchMove={(e) => handleMove(e.touches[0].clientX, e.touches[0].clientY)}
       onTouchEnd={handleEnd}
     >
-      {/* Background Overlay - Adjusted to be lighter/brighter as requested */}
-      <div className="absolute inset-0 bg-gradient-to-br from-red-600/20 via-yellow-500/10 to-blue-500/10 pointer-events-none mix-blend-screen z-0"></div>
+      {/* Background Overlay - Reduced opacity to keep background crisp */}
+      <div className="absolute inset-0 bg-gradient-to-br from-red-600/10 via-yellow-500/5 to-blue-500/5 pointer-events-none mix-blend-screen z-0 opacity-50"></div>
 
       <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none" />
 
-      {/* Golden Aura Background - shifted */}
+      {/* Golden Aura Background - shifted - Reduced opacity/blur to avoid muddy look */}
       <div
-        className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-yellow-500/10 via-orange-500/10 to-transparent rounded-full blur-[120px] pointer-events-none animate-pulse"
+        className="absolute top-1/2 transform -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-yellow-500/5 via-orange-500/5 to-transparent rounded-full blur-[80px] pointer-events-none animate-pulse"
         style={{ left: GOLDEN_AURA_LEFT }}
       />
 

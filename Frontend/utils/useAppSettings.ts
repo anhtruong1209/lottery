@@ -15,7 +15,7 @@ export interface AppSettings {
 const DEFAULT_SETTINGS: AppSettings = {
     companyName: 'VISHIPEL',
     logoUrl: '/logo.png',
-    backgroundUrl: '/images/default-bg.jpg',
+    backgroundUrl: '/img.png',
     musicUrl: '',
     primaryColor: '#1e40af',
     secondaryColor: '#3b82f6',
